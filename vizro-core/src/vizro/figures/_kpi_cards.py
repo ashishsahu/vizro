@@ -23,7 +23,8 @@ def kpi_card(
     """Creates a styled KPI (Key Performance Indicator) card displaying a value.
 
     **Warning:** Note that the format string provided to `value_format` is being evaluated, so ensure that only trusted
-    user input is provided to prevent potential security risks.
+    user input is provided to prevent
+    [potential security risks](https://stackoverflow.com/questions/76783239/is-it-safe-to-use-python-str-format-method-with-user-submitted-templates-in-serv).
 
     Args:
         data_frame: DataFrame containing the data.
@@ -87,7 +88,8 @@ def kpi_card_reference(  # noqa: PLR0913
     """Creates a styled KPI (Key Performance Indicator) card displaying a value in comparison to a reference value.
 
     **Warning:** Note that the format string provided to `value_format` and `reference_format` is being evaluated,
-    so ensure that only trusted user input is provided to prevent potential security risks.
+    so ensure that only trusted user input is provided to prevent
+    [potential security risks](https://stackoverflow.com/questions/76783239/is-it-safe-to-use-python-str-format-method-with-user-submitted-templates-in-serv).
 
     Args:
         data_frame: DataFrame containing the data.

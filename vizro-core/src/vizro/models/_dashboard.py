@@ -22,17 +22,16 @@ from dash import (
     html,
 )
 from dash.development.base_component import Component
-from pydantic import AfterValidator, BeforeValidator, Field, ValidationInfo
+from pydantic import AfterValidator, Field, ValidationInfo
 from typing_extensions import TypedDict
 
 import vizro
 from vizro._constants import MODULE_PAGE_404, VIZRO_ASSETS_PATH
 from vizro._themes.template_dashboard_overrides import dashboard_overrides
 from vizro.actions._action_loop._action_loop import ActionLoop
-from vizro.models import Navigation, Tooltip, VizroBaseModel
+from vizro.models import Navigation, VizroBaseModel
 from vizro.models._models_utils import _log_call
 from vizro.models._navigation._navigation_utils import _NavBuildType
-from vizro.models._tooltip import coerce_str_to_tooltip
 
 if TYPE_CHECKING:
     from vizro.models import Page
@@ -90,32 +89,17 @@ class Dashboard(VizroBaseModel):
             Defaults to `vizro_dark`.
         navigation (Navigation): See [`Navigation`][vizro.models.Navigation]. Defaults to `None`.
         title (str): Dashboard title to appear on every page on top left-side. Defaults to `""`.
-        description (Optional[Tooltip]): Optional markdown string that adds an icon next to the title.
-            Hovering over the icon shows a tooltip with the provided description. This also sets the page's meta
-            tags. Defaults to `None`.
 
     """
 
     pages: list[Page]
-    theme: Literal["vizro_dark", "vizro_light"] = Field(
-        default="vizro_dark", description="Theme to be applied across dashboard. Defaults to `vizro_dark`."
+    theme: Literal["vizro_dark", "vizro_light", "vizro_modern"] = Field(
+        default="vizro_modern", description="Theme to be applied across dashboard. Defaults to `vizro_dark`."
     )
     navigation: Annotated[
         Optional[Navigation], AfterValidator(set_navigation_pages), Field(default=None, validate_default=True)
     ]
     title: str = Field(default="", description="Dashboard title to appear on every page on top left-side.")
-    # TODO: ideally description would have json_schema_input_type=Union[str, Tooltip] attached to the BeforeValidator,
-    #  but this requires pydantic >= 2.9.
-    description: Annotated[
-        Optional[Tooltip],
-        BeforeValidator(coerce_str_to_tooltip),
-        Field(
-            default=None,
-            description="""Optional markdown string that adds an icon next to the title.
-            Hovering over the icon shows a tooltip with the provided description. This also sets the page's meta
-            tags. Defaults to `None`.""",
-        ),
-    ]
 
     @_log_call
     def pre_build(self):
@@ -126,16 +110,12 @@ class Dashboard(VizroBaseModel):
         # Note redirect_from=["/"] doesn't work and so the / route must be defined separately.
         self.pages[0].path = "/"
         meta_img = self._infer_image("app") or self._infer_image("logo") or self._infer_image("logo_dark")
-        dashboard_description_text = self.description.text if self.description else None
 
         for order, page in enumerate(self.pages):
-            # Dash also uses the dashboard-level description passed into Dash() as the default for page-level
-            # descriptions, but this would involve extracting dashboard.description and inserting it into the Dash app
-            # config in Vizro.build. What we do here is simpler but has the same effect.
             dash.register_page(
                 module=page.id,
                 name=page.title,
-                description=page.description.text if page.description else dashboard_description_text,
+                description=page.description,
                 image=meta_img,
                 title=f"{self.title}: {page.title}" if self.title else page.title,
                 path=page.path,
@@ -177,6 +157,7 @@ class Dashboard(VizroBaseModel):
                     data={
                         "vizro_dark": pio.templates.merge_templates("vizro_dark", dashboard_overrides),
                         "vizro_light": pio.templates.merge_templates("vizro_light", dashboard_overrides),
+                        "vizro_modern": pio.templates.merge_templates("vizro_modern", dashboard_overrides),
                     },
                 ),
                 ActionLoop._create_app_callbacks(),
@@ -211,16 +192,19 @@ class Dashboard(VizroBaseModel):
 
     def _get_page_divs(self, page: Page) -> _PageDivsType:
         # Identical across pages
-        dashboard_description = self.description.build().children if self.description else [None]
         dashboard_title = (
-            html.H2(id="dashboard-title", children=[self.title, *dashboard_description])
+            html.H2(id="dashboard-title", children=self.title)
             if self.title
             else html.H2(id="dashboard-title", hidden=True)
         )
         settings = html.Div(
-            children=dbc.Switch(
+            children=dcc.Dropdown(
                 id="theme-selector",
-                value=self.theme == "vizro_light",
+                options=["Modern", "Light", "Dark"],
+                value="Modern",
+                multi=False,
+                searchable=False,
+                clearable=False,
                 persistence=True,
                 persistence_type="session",
             ),
@@ -241,8 +225,7 @@ class Dashboard(VizroBaseModel):
 
         # Shared across pages but slightly differ in content. These could possibly be done by a clientside
         # callback instead.
-        page_description = page.description.build().children if page.description else [None]
-        page_title = html.H2(id="page-title", children=[page.title, *page_description])
+        page_title = html.H2(id="page-title", children=page.title)
         # cannot actually be None if you check pages and layout field together
         navigation: _NavBuildType = cast(Navigation, self.navigation).build(active_page_id=page.id)
         nav_bar = navigation["nav-bar"]
@@ -332,9 +315,13 @@ class Dashboard(VizroBaseModel):
         return html.Div(
             [
                 # Theme switch is added such that the 404 page has the same theme as the user-selected one.
-                dbc.Switch(
+                dcc.Dropdown(
                     id="theme-selector",
-                    value=self.theme == "vizro_light",
+                    options=["Modern", "Light", "Dark"],
+                    value="Modern",
+                    multi=False,
+                    searchable=False,
+                    clearable=False,
                     persistence=True,
                     persistence_type="session",
                 ),

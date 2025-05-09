@@ -35,15 +35,17 @@ def extract_bs_variables_from_css(variables: list[str], css_content: str) -> tup
     """Extract the last two occurrences for each variable in the CSS file."""
     extracted_dark = {}
     extracted_light = {}
+    extracted_modern = {}
 
     for variable in variables:
-        dark_value, light_value = _extract_last_two_occurrences(variable, css_content)
+        dark_value, light_value, modern_value = _extract_last_two_occurrences(variable, css_content)
         cleaned_variable = variable.replace("--", "").upper()
-        if dark_value and light_value:
+        if dark_value and light_value and modern_value:
             extracted_dark[cleaned_variable] = dark_value
             extracted_light[cleaned_variable] = light_value
+            extracted_modern[cleaned_variable] = modern_value
 
-    return extracted_dark, extracted_light
+    return extracted_dark, extracted_light, extracted_modern
 
 
 def generate_json_template(extracted_values: dict[str, str]) -> go.layout.Template:
@@ -110,15 +112,16 @@ def generate_json_template(extracted_values: dict[str, str]) -> go.layout.Templa
 
 
 if __name__ == "__main__":
-    extracted_dark, extracted_light = extract_bs_variables_from_css(VARIABLES, CSS_PATH.read_text())
+    extracted_dark, extracted_light, extracted_modern = extract_bs_variables_from_css(VARIABLES, CSS_PATH.read_text())
     template_dark = generate_json_template(extracted_dark)
     template_light = generate_json_template(extracted_light)
+    template_modern = generate_json_template(extracted_modern)
 
     parser = argparse.ArgumentParser(description="Generate JSON plotly templates.")
     parser.add_argument("--check", help="check plotly templates are up to date", action="store_true")
     args = parser.parse_args()
 
-    for generated_template, file_name in zip([template_dark, template_light], ["vizro_dark.json", "vizro_light.json"]):
+    for generated_template, file_name in zip([template_dark, template_light, template_modern], ["vizro_dark.json", "vizro_light.json", "vizro_modern.json"]):
         existing_template_path = Path(f"{THEMES_FOLDER}/{file_name}")
         existing_template = json.loads(existing_template_path.read_text())
         if args.check:

@@ -13,7 +13,7 @@ from typing import Annotated, Any, Literal, NewType, Optional, Protocol, Union, 
 
 import plotly.io as pio
 import pydantic_core as cs
-from pydantic import Discriminator, Field, StrictBool, StringConstraints, Tag, ValidationInfo
+from pydantic import Discriminator, Field, StrictBool, Tag, ValidationInfo
 from pydantic.json_schema import SkipJsonSchema
 from typing_extensions import TypeAlias, TypedDict
 
@@ -369,9 +369,9 @@ def _pio_templates_default():
     old_default = pio.templates.default
     template_changed = False
     # If the user has set pio.templates.default to a vizro theme already, no need to change it.
-    if old_default not in ["vizro_dark", "vizro_light"]:
+    if old_default not in ["vizro_dark", "vizro_light", "vizro_modern"]:
         template_changed = True
-        pio.templates.default = "vizro_dark"
+        pio.templates.default = "vizro_modern"
 
     # Revert the template. This is done in a try/finally so that if the code wrapped inside the context manager (i.e.
     # plotting functions) raises an exception, pio.templates.default is still reverted. This is not very important
@@ -486,7 +486,7 @@ class capture:
                     # The only exception here is the edge case that the user has specified template="vizro_light" or
                     # "vizro_dark" in the plotting function, in which case we don't want to change it. This makes
                     # it easier for a user to try out both themes simultaneously in a notebook.
-                    if fig.layout.template not in (pio.templates["vizro_dark"], pio.templates["vizro_light"]):
+                    if fig.layout.template not in (pio.templates["vizro_dark"], pio.templates["vizro_light"], pio.templates["vizro_modern"]):
                         fig.layout.template = default_template
                     fig.__class__ = _DashboardReadyFigure
 
@@ -629,14 +629,6 @@ ActionType = Annotated[
 # Extra type groups used for mypy casting
 FigureWithFilterInteractionType = Union["Graph", "Table", "AgGrid"]
 FigureType = Union["Graph", "Table", "AgGrid", "Figure"]
-
-# TODO-AV2 D 3: think about how to make this public and use in our inbuilt actions. Compare to _IdProperty.
-# Consider how it works if you just specify model name and not a dot separated string. Do we need a new composite type
-# for Union[list[_DotSeparatedStr], dict[str, _DotSeparatedStr]] too? Consider parameter target form too and whether
-# it should work similarly.
-_DotSeparatedStr = Annotated[str, StringConstraints(pattern="^[^.]+[.][^.]+$")]
-"""A string that must contain exactly one dot ('.'), with at least one character on both sides.
-For example: 'model-id.children'."""
 
 
 # TODO-AV2 A 1: improve this structure. See https://github.com/mckinsey/vizro/pull/880.

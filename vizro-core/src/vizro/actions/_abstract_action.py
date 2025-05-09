@@ -4,12 +4,10 @@ import abc
 import inspect
 from typing import Union
 
-from dash import Output
 from dash.development.base_component import Component
-from pydantic import TypeAdapter
 
 from vizro.models._action._action import _BaseAction
-from vizro.models.types import _DotSeparatedStr, _IdProperty
+from vizro.models.types import _IdProperty
 
 
 # TODO-AV2 D 5: make public.
@@ -70,16 +68,9 @@ class _AbstractAction(_BaseAction, abc.ABC):
         # arguments since this would only work well for class-based actions and not @capture("action") ones. Instead
         # the code that does make_outputs_from_targets would be put into a reusable function.
         #
-        # TODO-AV2 D 4: build in a vizro_download component. At some point after that consider changing export_data to
+        # TODO-AV D 4: build in a vizro_download component. At some point after that consider changing export_data to
         #  use it, but that's not urgent. See  https://github.com/mckinsey/vizro/pull/1054#discussion_r1989405177.
         pass
-
-    @property
-    def _transformed_outputs(self) -> Union[list[Output], dict[str, Output]]:
-        # Action.outputs is validated by pydantic, but for _AbstractAction.outputs we need to do the validation
-        # manually.
-        TypeAdapter(Union[list[_DotSeparatedStr], dict[str, _DotSeparatedStr]]).validate_python(self.outputs)
-        return super()._transformed_outputs
 
     @property
     def _dash_components(self) -> list[Component]:

@@ -1,5 +1,6 @@
 function update_dashboard_theme(theme_selector_checked) {
-  const theme = theme_selector_checked ? "light" : "dark";
+
+  const theme = theme_selector_checked == "Modern" ? "modern" : theme_selector_checked == "Light" ? "light" : "dark";
 
   // Update theme attributes for Bootstrap and Mantine
   document.documentElement.setAttribute("data-bs-theme", theme);
@@ -7,16 +8,24 @@ function update_dashboard_theme(theme_selector_checked) {
 
   return window.dash_clientside.no_update;
 }
+// function update_dashboard_theme(theme_selector_checked) {
+  
+//   if(theme_selector_checked == null) return;
+//   document.documentElement.setAttribute(
+//     "data-bs-theme",
+//     theme_selector_checked == "Modern" ? "modern" : theme_selector_checked == "Light" ? "light" : "dark"
+//   );
+//   document.documentElement.setAttribute("data-mantine-color-scheme", theme_selector_checked == "Modern" ? "modern" : theme_selector_checked == "Light" ? "light" : "dark");
+//   return window.dash_clientside.no_update;
+// }
 
 function update_ag_grid_theme(theme_selector_checked) {
-  return theme_selector_checked
-    ? "ag-theme-quartz ag-theme-vizro"
-    : "ag-theme-quartz-dark ag-theme-vizro";
+  if(theme_selector_checked == null) return "ag-theme-quartz ag-theme-vizro";
+  return theme_selector_checked == "Modern" ? "ag-theme-quartz ag-theme-vizro" : theme_selector_checked == "Light" ? "ag-theme-quartz ag-theme-vizro" : "ag-theme-quartz-dark ag-theme-vizro";
 }
 
-function update_graph_theme(figure, theme_selector_checked, vizro_themes) {
-  const theme_to_apply = theme_selector_checked ? "vizro_light" : "vizro_dark";
-
+function update_graph_theme( figure, theme_selector_checked, vizro_themes) {
+  const theme_to_apply = theme_selector_checked == "Modern" ? "vizro_modern" : theme_selector_checked == "Light" ? "vizro_light" : "vizro_dark";
   const updated_figure = {
     ...figure,
     layout: {
